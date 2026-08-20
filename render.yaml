@@ -6,11 +6,24 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     branch: development
+    plan: free                    # <-- AGREGA ESTO
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: PORT
         value: 8080
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: hackathon-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: hackathon-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: hackathon-db
+          property: password
     healthCheckPath: /api/health
 
   # Frontend
@@ -20,6 +33,7 @@ services:
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     branch: development
+    plan: free                    # <-- AGREGA ESTO
     envVars:
       - key: VITE_API_URL
         fromService:
