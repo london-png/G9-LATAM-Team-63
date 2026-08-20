@@ -24,4 +24,4 @@ EXPOSE 8080
 CMD ["sh", "-c", "export SPRING_DATASOURCE_URL=$(echo $SPRING_DATASOURCE_URL | sed 's/^postgresql:/jdbc:postgresql:/'); java -jar -Dserver.port=${PORT:-8080} -Dspring.profiles.active=prod app.jar"]
   
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+#ENTRYPOINT ["java", "-jar", "app.jar"]
