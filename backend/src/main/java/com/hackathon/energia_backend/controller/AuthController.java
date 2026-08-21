@@ -57,6 +57,19 @@ public class AuthController {
     // ==========================================
     /**
      * Registra un nuevo usuario, asigna rol por defecto y devuelve un JWT.
+     *
+     * <p><strong>Nota de implementación (v.2):</strong>
+     * Se eliminó la re-autenticación vía {@code autenticacionService.authenticate()}
+     * posterior al {@code usuarioRepository.save()}. La razón técnica es evitar
+     * una segunda consulta a la base de datos inmediatamente después de la
+     * operación de persistencia, la cual —dependiendo del contexto de transacción
+     * JPA y el nivel de aislamiento— podría no reflejar aún el registro recién
+     * creado (especialmente en entornos cloud con réplicas de lectura/escritura).
+     *
+     * <p>En su lugar, se construye un {@link UserDetails} transitorio directamente
+     * desde los datos validados de la petición, garantizando la generación del
+     * token sin latencia adicional ni riesgo de {@code UsernameNotFoundException}
+     * post-registro.
      */
     @Operation(summary = "Crear cuenta")
     @ApiResponse(responseCode = "201", description = "Usuario registrado exitosamente")
@@ -73,17 +86,27 @@ public class AuthController {
                     .body(new MessageResponse("Las contraseñas no coinciden"));
         }
 
+        // ==========================================
+        // Construcción y persistencia de la entidad
+        // ==========================================
         Usuario usuario = new Usuario();
         usuario.setUsername(request.getUsername());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setRolUsuario(Rol.USER);
+        usuario.getRoles().add(Rol.USER);
 
         usuarioRepository.save(usuario);
 
-        UserDetails user = autenticacionService.authenticate(
-                request.getUsername(),
-                request.getPassword()
-        );
+        // ==========================================
+        // Generación de token sin round-trip a la base de datos
+        // Se utiliza UserDetails transitorio con authorities correspondientes
+        // ==========================================
+        UserDetails user = org.springframework.security.core.userdetails.User.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .roles(Rol.USER.name())
+                .build();
+
         String token = jwtUtil.generateToken(user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
