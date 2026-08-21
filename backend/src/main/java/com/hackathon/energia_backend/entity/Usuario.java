@@ -67,16 +67,27 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(name = "rol_usuario", nullable = false)
     private Rol rolUsuario = Rol.USER;
-    // =========================================================================
-    // Callback JPA: fuerza el username a MAYÚSCULAS antes de insertar/actualizar.
-    // Se ejecuta automáticamente por el EntityManager; no requiere llamada manual.
-    // =========================================================================
-    @PrePersist
-    @PreUpdate
-    public void preGuardar() {
-        if (this.username != null) {
-            this.username = this.username.toUpperCase();
-        }
-    }
-}
 
+    // =========================================================================
+    // [DESHABILITADO] Callback JPA: conversión automática a MAYÚSCULAS
+    // ----------------------------------------------------------------------------
+    // Motivo de desactivación:
+    // Este callback forzaba el username a UPPERCASE antes de persistir, lo cual
+    // generaba una inconsistencia case-sensitive entre la capa de persistencia
+    // y la capa de autenticación. El servicio de login buscaba el username en
+    // el formato original (ej. "admin"), pero la BD almacenaba "ADMIN",
+    // provocando UsernameNotFoundException (HTTP 404) tanto en login como en
+    // registro post-save.
+    //
+    // Decisión técnica: se mantiene el username en el case original ingresado
+    // por el usuario, delegando la normalización al controlador si es
+    // estrictamente necesaria en el futuro.
+    // =========================================================================
+    // @PrePersist
+    // @PreUpdate
+    // public void preGuardar() {
+    //     if (this.username != null) {
+    //         this.username = this.username.toUpperCase();
+    //     }
+    // }
+}
